@@ -1,0 +1,3 @@
+ERROR:root:Error occurred while writing to Excel file: File is not a zip file
+WARNING:django.request:Bad Request: /inventory/category/
+INFO:django.utils.autoreload:/home/omfsakib/Documents/Projects/bonikee/bonikee-backend/apps/share/services/tenant_error_logger.py changed, reloading.

@@ -1,0 +1,48 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [development , staging]
+      
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install sshpass
+        run: sudo apt-get update && sudo apt-get install -y sshpass
+
+      - name: Deploy to EC2
+        run: |
+          sshpass -p "${{ secrets.EC2_PASSWORD }}" ssh -p 20 -o StrictHostKeyChecking=no "${{ secrets.EC2_USERNAME }}"@"${{ secrets.EC2_IP }}" 'bash -s' << 'EOF'
+            
+            echo "Executing remote commands..."
+            echo "Current branch is "${{ github.ref }}""
+
+          if [ "${{ github.ref }}" == 'refs/heads/development' ]; then
+            cd "${{ secrets.PROJECT_LOCATION }}"
+          elif [ "${{ github.ref }}" == 'refs/heads/staging' ]; then
+            cd "${{ secrets.STAGING_PROJECT_LOCATION }}"
+          else
+            echo "No branch matched."
+            exit 1
+          fi
+          
+
+            bash deploy.sh | pv
+
+            echo "Remote commands executed."
+          EOF
+      
+      - name: Send Slack Notification
+        uses: act10ns/slack@v1
+        with:
+          status: ${{ job.status }}
+          channel: '#bonikee-devops' 
+          message: 'Deployment to "${{ github.ref }}" branch "${{ job.status }}"!'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}      
